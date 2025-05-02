@@ -2,6 +2,7 @@ import requests
 import os
 import time
 import logging
+import utils
 
 log = logging.getLogger('main')
 
@@ -18,64 +19,65 @@ class Api:
         self.session = requests.Session()
 
     def get_albums(self, id: int):
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-            # 'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'DNT': '1',
-            'Alt-Used': self.alt_used,
-            'Connection': 'keep-alive',
-            # 'Cookie': 'session=jbe2o7dvmlm4jqdrit5sa1o5tg; darkMode=0',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
-            'Sec-Fetch-User': '?1',
-            'Priority': 'u=0, i',
-            'Pragma': 'no-cache',
-            'Cache-Control': 'no-cache',
-        }
+        for i in range(5):
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+                # 'Accept-Encoding': 'gzip, deflate, br, zstd',
+                'DNT': '1',
+                'Alt-Used': self.alt_used,
+                'Connection': 'keep-alive',
+                # 'Cookie': 'session=jbe2o7dvmlm4jqdrit5sa1o5tg; darkMode=0',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1',
+                'Priority': 'u=0, i',
+                'Pragma': 'no-cache',
+                'Cache-Control': 'no-cache',
+            }
 
-        params = {
-            'id': str(id),
-        }
-        data = {
-            'type': '1',
-        }
-        _get = self.session.get(f'{self.base_url}/albums', headers=headers, params=params, cookies=self.cookies)
+            params = {
+                'id': str(id),
+            }
+            data = {
+                'type': '1',
+            }
+            _get = self.session.get(f'{self.base_url}/albums', headers=headers, params=params, cookies=self.cookies)
 
-        header_post = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-            # 'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Origin': self.base_url,
-            'DNT': '1',
-            'Alt-Used': self.alt_used,
-            'Connection': 'keep-alive',
-            'Referer': f'{self.base_url}/albums?id={id}',
-            # 'Cookie': 'session=jbe2o7dvmlm4jqdrit5sa1o5tg; darkMode=0',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'same-origin',
-            'Sec-Fetch-User': '?1',
-            'Priority': 'u=0, i',
-            'Pragma': 'no-cache',
-            'Cache-Control': 'no-cache',
-        }
-        for i in range(3):
+            header_post = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+                # 'Accept-Encoding': 'gzip, deflate, br, zstd',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Origin': self.base_url,
+                'DNT': '1',
+                'Alt-Used': self.alt_used,
+                'Connection': 'keep-alive',
+                'Referer': f'{self.base_url}/albums?id={id}',
+                # 'Cookie': 'session=jbe2o7dvmlm4jqdrit5sa1o5tg; darkMode=0',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'same-origin',
+                'Sec-Fetch-User': '?1',
+                'Priority': 'u=0, i',
+                'Pragma': 'no-cache',
+                'Cache-Control': 'no-cache',
+            }
+
             _post = self.session.post(_get.url, headers=header_post, cookies=self.cookies, data=data)
             if 'Buy Album' in _post.text:
                 return _post.text
             if not 'Download URL:' in _post.text:
                 log.warning(f"Not found Download URL for {_post.url}. Try again")
-                time.sleep(0.5)
+                time.sleep(1)
                 continue
             return _post.text
-        raise Exception(f"not found Download URL for {_get.url}")
+        raise Exception(f"not found Download URL for id {id}")
     def download_file(self, url, output_path):
         downloaded_size = 0
         if os.path.exists(output_path):

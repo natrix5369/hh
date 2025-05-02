@@ -1,6 +1,7 @@
 import os
 import logging
 import shutil
+import time
 from concurrent.futures import ThreadPoolExecutor
 from sqlite3 import IntegrityError
 
@@ -28,57 +29,63 @@ class Prog:
 
 
     def upload_album(self, id):
-        id = int(id)
-
-        def download_upload(link_download, output_path):
-            error = None
-            log.info(f"Try download {os.path.basename(output_path)}: {id}")
-            for i in range(5):
-                try:
-                    down = self.hapi.download_file(link_download, output_path)
-                    assert os.path.exists(output_path)
-                    log.info(f"Upload webdav: {output_path}: {id}")
-                    remote_file = f"{str(id)}_{os.path.basename(output_path)}"
-                    res = self.webdav.upload_file(remote_file, output_path)
-                    log.info(f"SUCCESS! {os.path.basename(output_path)}: {id}")
-                    os.remove(output_path)
-                    return True
-                except Exception as e:
-                    error = e
-                    log.error(f"Error download: {os.path.basename(output_path)} {id}: {e}. Trying again.")
-            log.critical(f"Download failed: {os.path.basename(output_path)}: {error}")
-            return False
-
-
         try:
-            album_html = self.hapi.get_albums(id)
-            assert album_html
+            id = int(id)
+            def download_upload(link_download, output_path):
+                error = None
+                log.info(f"Try download {os.path.basename(output_path)}: {id}")
+                for i in range(5):
+                    try:
+                        down = self.hapi.download_file(link_download, output_path)
+                        assert os.path.exists(output_path)
+                        log.info(f"Upload webdav: {output_path}: {id}")
+                        remote_file = f"{str(id)}_{os.path.basename(output_path)}"
+                        res = self.webdav.upload_file(remote_file, output_path)
+                        log.info(f"SUCCESS! {os.path.basename(output_path)}: {id}")
+                        os.remove(output_path)
+                        return True
+                    except Exception as e:
+                        error = e
+                        log.error(f"Error download: {os.path.basename(output_path)} {id}: {e}. Trying again.")
+                log.critical(f"Download failed: {os.path.basename(output_path)}: {error}")
+                self.db.add_errors(int(id))
+                return False
+
+
+            try:
+                album_html = self.hapi.get_albums(id)
+                assert album_html
+            except Exception as e:
+                log.critical(f"Error get album page: {id}: {e}")
+                raise e
+
+            if not 'Download Album' in album_html:
+                log.warning(f"Not found Download button for {id}")
+                return False
+
+            try:
+                link_download = parsing.parse_album_page(album_html)
+                assert link_download
+            except Exception as e:
+                log.debug(f"{id}: {album_html}")
+                log.critical(f"Error parse album page. Not found link for download: {id}: {e}")
+                raise e
+
+            file_name = link_download.split('?')[0].split('/')[-1]
+            try:
+                self.db.add_album(id, file_name)
+            except IntegrityError:
+                pass
+
+            output_path = os.path.join(constants.storage_dir, file_name)
+            if download_upload(link_download, output_path):
+                self.db.update_uploaded(int(id))
+                return True
+            else:
+                return False
         except Exception as e:
-            log.critical(f"Error get album page: {id}: {e}")
+            self.db.add_errors(int(id))
             raise e
-
-        if not 'Download Album' in album_html:
-            log.warning(f"Not found Download button for {id}")
-            return False
-
-        try:
-            link_download = parsing.parse_album_page(album_html)
-            assert link_download
-        except Exception as e:
-            log.debug(f"{id}: {album_html}")
-            log.critical(f"Error parse album page. Not found link for download: {id}: {e}")
-            raise e
-
-        file_name = link_download.split('?')[0].split('/')[-1]
-        try:
-            self.db.add_album(id, file_name)
-        except IntegrityError:
-            pass
-
-        output_path = os.path.join(constants.storage_dir, file_name)
-        if download_upload(link_download, output_path):
-            self.db.update_uploaded(int(id))
-        return True
 
 
     def check_database(self):
@@ -100,6 +107,8 @@ class Prog:
             data_db = self.db.get_all_album()
 
             for page_number in range(9999):
+                if page_number == 0:
+                    continue
                 log.info(f"Try page: {page_number}")
                 main_page_html = self.hapi.get_main_page(page_number)
                 assert main_page_html
@@ -115,6 +124,8 @@ class Prog:
                     thread = thread_pool.submit(self.upload_album, id)
                     self.thread_list.append(thread)
                     log.info(f"Added to download: {id}. Count threads: {len(self.thread_list)}")
+
+                time.sleep(3)
 
             log.info(f"Wait complete all threads...")
             for thread in self.thread_list:

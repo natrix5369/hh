@@ -20,6 +20,15 @@ def create_database():
     uploaded  integer default 0
 );
 
+create table main.errors
+(
+    id integer not null
+        constraint errors_pk
+            unique
+);
+
+
+
 
 
 
@@ -56,6 +65,12 @@ class Database:
     def update_uploaded(self, album: int):
         cur = self.db.cursor()
         cur.execute("update album set uploaded = ? where album = ?", (1, album))
+        self.db.commit()
+        cur.close()
+
+    def add_errors(self, album: int):
+        cur = self.db.cursor()
+        cur.execute("insert into errors (id) values (?)", (album,))
         self.db.commit()
         cur.close()
 

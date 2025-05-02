@@ -122,9 +122,9 @@ class Prog:
                     self.thread_list.append(thread)
                     log.info(f"Added to download: {id}. Count threads: {len(self.thread_list)}")
 
-                log.info(f"Wait complete all threads...")
-                for thread in self.thread_list:
-                    thread.result()
+            log.info(f"Wait complete all threads...")
+            for thread in self.thread_list:
+                thread.result()
 
             log.info(f"Work finished!")
 

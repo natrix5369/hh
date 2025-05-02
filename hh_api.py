@@ -80,16 +80,11 @@ class Api:
         raise Exception(f"not found Download URL for id {id}")
     def download_file(self, url, output_path):
         downloaded_size = 0
-        if os.path.exists(output_path):
-            downloaded_size = os.path.getsize(output_path)
 
-        headers = {
-            'Range': f'bytes={downloaded_size}-',
-        }
 
-        with self.session.get(url, headers=headers, stream=True) as response:
+        with self.session.get(url,stream=True) as response:
             response.raise_for_status()
-            total_size = int(response.headers.get('Content-Range', '0').split('/')[-1])
+            total_size = int(response.headers.get('content-length'))
             with open(output_path, 'ab') as file:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:

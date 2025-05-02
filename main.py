@@ -12,7 +12,7 @@ import parsing
 import webdav_mailru
 import database
 
-logger.init_logger()
+logger.init_logger(True)
 
 log = logging.getLogger('main')
 thread_pool = ThreadPoolExecutor(max_workers=5)
@@ -94,9 +94,6 @@ class Prog:
             if data[3] == 0:
                 thread = thread_pool.submit(self.upload_album, album)
                 self.thread_list.append(thread)
-
-        for thread in self.thread_list:
-            thread.result()
         return True
 
 
@@ -125,11 +122,9 @@ class Prog:
                     self.thread_list.append(thread)
                     log.info(f"Added to download: {id}. Count threads: {len(self.thread_list)}")
 
-                time.sleep(3)
-
-            log.info(f"Wait complete all threads...")
-            for thread in self.thread_list:
-                thread.result()
+                log.info(f"Wait complete all threads...")
+                for thread in self.thread_list:
+                    thread.result()
 
             log.info(f"Work finished!")
 

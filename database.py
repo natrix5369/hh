@@ -7,6 +7,9 @@ db_file = os.path.join(constants.database_dir, 'db.sqlite3')
 os.makedirs(constants.database_dir, exist_ok=True)
 
 def create_database():
+    database = sqlite3.connect(db_file)
+    cursor = database.cursor()
+
     sql = """
             create table main.album
 (
@@ -19,24 +22,19 @@ def create_database():
     file_name TEXT,
     uploaded  integer default 0
 );
-
-create table main.errors
+    """
+    cursor.execute(sql)
+    sql = """
+    create table main.errors
 (
     id integer not null
         constraint errors_pk
             unique
 );
-
-
-
-
-
-
-    
     """
-    database = sqlite3.connect(db_file)
-    cursor = database.cursor()
+
     cursor.execute(sql)
+
     database.commit()
     database.close()
 

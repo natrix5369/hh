@@ -121,6 +121,7 @@ class Prog:
                 for link in links:
                     id = int(link.split('=')[1].strip())
                     if id in data_db:
+                        log.info(f"Album id: {id} on database. Skip download")
                         continue
                     thread = thread_pool.submit(self.upload_album, id)
                     self.thread_list.append(thread)

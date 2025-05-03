@@ -29,7 +29,9 @@ class Prog:
 
 
     def upload_album(self, id):
+        output_path = ''
         try:
+
             id = int(id)
             def download_upload(link_download, output_path):
                 error = None
@@ -48,8 +50,7 @@ class Prog:
                         error = e
                         log.error(f"Error download: {os.path.basename(output_path)} {id}: {e}. Trying again.")
                 log.critical(f"Download failed: {os.path.basename(output_path)}: {error}")
-                self.db.add_errors(int(id))
-                return False
+                raise Exception("Error upload\download")
 
 
             try:
@@ -84,6 +85,9 @@ class Prog:
             else:
                 return False
         except Exception as e:
+            if output_path:
+                if os.path.exists(output_path):
+                    os.remove(output_path)
             self.db.add_errors(int(id))
             raise e
 

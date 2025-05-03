@@ -12,7 +12,7 @@ import parsing
 import webdav_mailru
 import database
 
-logger.init_logger(True)
+logger.init_logger(False)
 
 log = logging.getLogger('main')
 thread_pool = ThreadPoolExecutor(max_workers=5)
